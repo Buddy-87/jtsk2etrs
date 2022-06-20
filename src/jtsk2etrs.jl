@@ -18,4 +18,11 @@ include("data_handling/load_data.jl")
 include("data_handling/table.jl")
 
 
+if abspath(PROGRAM_FILE) == @__FILE__
+
+    # do something only this file is executed. 
+    do_something()
+
+end
+
 end # module
