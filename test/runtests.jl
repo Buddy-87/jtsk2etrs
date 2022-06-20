@@ -1,4 +1,5 @@
 using Test
+using jtsk2etrs
 
 @testset "Coordinate transformation" begin
     @test begin

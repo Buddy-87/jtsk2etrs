@@ -22,28 +22,25 @@ Coordinates of the shifted pole are phi_Q = 48°15', lambda_Q = 42°30'.
 
 
 # Example
-```jldoctest
+```jldoctest{T<:AbstractFloat}
 julia> bl2jtsk(,)
 (,) 
 ```
 """
-function bl2jtsk(b::T, l::T) where (T<:Real)
-    const rho_0 = 1298039.004638987
-    const s_0   = deg2rad(78.50000)
-    const n     = 0.9799247046208300
-    const alpha = 1.000597498371542
-    const k     = 0.996592486900000 # 1.003419163966575
-    const e     = 0.816968310215303e-1
-    const vk    = deg2rad(42. + 31.0/60. + 31.41725/3600.0)
-    const uk    = deg2rad(59. + 42.0/60. + 42.6968885/3600.0)
-    const u0    = deg2rad(49. + 27.0/60. + 32.84625/3600.0)
+function bl2jtsk(b::T, l::T) where (T<:AbstractFloat)
+    rho_0::T = 1298039.004638987
+    s_0::T   = deg2rad(78.50000)
+    n::T     = 0.9799247046208300
+    alpha::T = 1.000597498371542
+    k::T     = 0.996592486900000 # 1.003419163966575
+    e::T     = 0.816968310215303e-1
+    vk::T    = deg2rad(42. + 31.0/60. + 31.41725/3600.0)
+    uk::T    = deg2rad(59. + 42.0/60. + 42.6968885/3600.0)
+    u0::T    = deg2rad(49. + 27.0/60. + 32.84625/3600.0)
 
     # (b,l) >> (U,V)
     phi::T = deg2rad(b);
-    u::T = 0.2e1 * atan( pow(tan(phi/ 2.0 + pi/4.0 )
-                                 * pow( (1. - e * sin(phi))
-                                      / (1. + e * sin(phi)), e / 2.), alpha) / k)
-               - pi/2.0;
+    u::T = 0.2e1 * atan((tan(phi/ 2.0 + pi/4.0 ) * ( (1. - e * sin(phi)) / (1. + e * sin(phi)))^(e / 2.))^alpha) / k - pi/2.0;
     v::T = alpha * deg2rad(l + 17+36.0/60.0+46.002/3600.0); # CUZK -> 17°40'
 
     # (U,V) >> (S,D)
@@ -87,16 +84,16 @@ julia> jtsk2bl(,)
 (,) 
 ```
 """
-function jtsk2bl( y::T, x::T) where (T<:Real)
-    const rho_0 = 1298039.004638987;
-    const s_0   = deg2rad(78.50000) ;
-    const n     = .9799247046208300;
-    const alpha = 1.000597498371542;
-    const k     = /*1.003419163966575;*/.996592486900000;
-    const e     = 0.81696831215303e-1;
-    const vk    = deg2rad(42. + 31.0/60. + 31.41725/3600.0)
-    const uk    = deg2rad(59. + 42.0/60. + 42.6968885/3600.0)
-    const u0    = deg2rad(49. + 27.0/60. + 32.84625/3600.0)
+function jtsk2bl( y::T, x::T) where (T<:AbstractFloat)
+    rho_0::T = 1298039.004638987
+    s_0::T   = deg2rad(78.50000)
+    n::T     = 0.9799247046208300
+    alpha::T = 1.000597498371542
+    k::T     = 0.996592486900000 # 1.003419163966575
+    e::T     = 0.816968310215303e-1
+    vk::T    = deg2rad(42. + 31.0/60. + 31.41725/3600.0)
+    uk::T    = deg2rad(59. + 42.0/60. + 42.6968885/3600.0)
+    u0::T    = deg2rad(49. + 27.0/60. + 32.84625/3600.0)
 
     # ((\rho, \vaerpsilon) << (Y,X)
     rho::T = sqrt(x*x+y*y);
@@ -117,7 +114,7 @@ function jtsk2bl( y::T, x::T) where (T<:Real)
     dphi::T =9999
     loop_cnt::Int8 = 0
 
-    while ( abs( dphi ) >= .000001/3600*DEG2RAD )
+    while ( abs( dphi ) >= deg2rad(0.000001/3600) )
         phi_ii = 2.0* atan((k * tan( u/2.0 + pi/4.0 ))^(1.0/alpha) 
                          * ((1.0-e*sin(phi_i))/(1.0+e*sin(phi_i)))^(-e/2.0 )) - pi/2.0;
         dphi = phi_ii - phi_i;
@@ -164,8 +161,8 @@ julia> bl2jtsk(,)
 (,) 
 ```
 """
-function bl2jtsk05( b::T, l::T ) where (T<:Real)
-    y::T,x::T = bl2jtsk::T(b, l)
+function bl2jtsk05( b::T, l::T ) where (T<:AbstractFloat)
+    y::T,x::T = bl2jtsk{T}(b, l)
     dy::T, dx::T = interpolate_correction(y,x);
 
     return y - dy, x - dx;
@@ -198,7 +195,7 @@ julia> jtsk052bl(,)
 (,) 
 ```
 """
-function jtsk052bl( y::T, x::T) where (T<:Real)
+function jtsk052bl( y::T, x::T) where (T<:AbstractFloat)
     dy::T, dx::T = interpolate_correction(y,x);
     return jtsk2bl(y + dy, x + dx);
 end
@@ -219,31 +216,75 @@ julia> interpolate_correction(,)
 (,) 
 ```
 """
-function interpolate_correction(y::T, x::T) where (T<:Real)
+function interpolate_correction(y::T, x::T) where (T<:AbstractFloat)
     # Cubic transformation constants
-    const a1  =  0.2946529277e-01
-    const a2  =  0.2515965696e-01
-    const a3  =  0.1193845912e-06
-    const a4  = -0.4668270147e-06
-    const a5  =  0.9233980362e-11
-    const a6  =  0.1523735715e-11
-    const a7  =  0.1696780024e-17
-    const a8  =  0.4408314235e-17
-    const a9  = -0.8331083518e-23
-    const a10 = -0.3689471323e-23
+    a1::T  =  0.2946529277e-01
+    a2::T  =  0.2515965696e-01
+    a3::T  =  0.1193845912e-06
+    a4::T  = -0.4668270147e-06
+    a5::T  =  0.9233980362e-11
+    a6::T  =  0.1523735715e-11
+    a7::T  =  0.1696780024e-17
+    a8::T  =  0.4408314235e-17
+    a9::T  = -0.8331083518e-23
+    a10::T = -0.3689471323e-23
 
     x_red::T = x - 1089000
     y_red::T = y - 654000
 
     dy::T = a2+a3*y_red + a4*x_red + 2.0*a5*y_red*x_red + a6*(x_red*x_red - y_red*y_red)
-            +a8*x_red*(x_red*x_red - 3.0*y_red*y_red) + a7*y_red(3.0*x_red*x_red - y_red*y_red)
+            +a8*x_red*(x_red*x_red - 3.0*y_red*y_red) + a7*y_red*(3.0*x_red*x_red - y_red*y_red)
             -4.0*a10*x_red*y_red*(x_red*x_red - y_red*y_red)
             +a9*( x_red^4.0 + y_red^4.0 - 6.0*(x_red*y_red)^2.0)
 
     dx::T = a1+a3*x_red-a4*y_red - 2.0*a6*x_red*y_red + a5*( x_red*x_red - y_red*y_red )
-            +a7*x_red*(x_red*x_red-3.0*y_red*y_red) - a8*y_red(3.0*x_red*x_red-y_red*y_red )
-            +4.0*a9*y_red*x_red(x_red*x_red-y_red*y_red)
+            +a7*x_red*(x_red*x_red-3.0*y_red*y_red) - a8*y_red*(3.0*x_red*x_red-y_red*y_red)
+            +4.0*a9*y_red*x_red*(x_red*x_red-y_red*y_red)
             +10.0*( x_red^4.0 +y_red^4.0 - 6.0*(x_red*y_red)^2.0 )
+
+    return dy, dx
+end
+
+"""
+Use cubic interpolation to compute the correction for transforming the JTSK to JTSK05.
+These discrepences are caused by deformation of the original JTSK.
+# Arguments
+- `y::Vector{T}` y-coordinates in JTSK reference frame, +y-axis is in the west direction
+- `x::Vector{T}` x-coordinates in JTSK reference frame, +x-axis is in the south direction
+# Returns
+- `dy::Vector{T}` correction for transforming the JTSK to JTSK05 in y-axis
+- `dx::Vector{T}` correction for transforming the JTSK to JTSK05 in x-axis
+# Example
+```jldoctest
+julia> interpolate_correction(,)
+(,) 
+```
+""" 
+function interpolate_correction(y::Vector{T}, x::Vector{T}) where (T<:AbstractFloat)
+    # Cubic transformation constants
+    a1::T  =  0.2946529277e-01
+    a2::T  =  0.2515965696e-01
+    a3::T  =  0.1193845912e-06
+    a4::T  = -0.4668270147e-06
+    a5::T  =  0.9233980362e-11
+    a6::T  =  0.1523735715e-11
+    a7::T  =  0.1696780024e-17
+    a8::T  =  0.4408314235e-17
+    a9::T  = -0.8331083518e-23
+    a10::T = -0.3689471323e-23
+
+    x_red::Vector{T} = x - 1089000
+    y_red::Vector{T} = y - 654000
+
+    dy::Vector{T} = a2+a3.*y_red + a4.*x_red + 2.0.*a5.*y_red.*x_red + a6.*(x_red.*x_red - y_red.*y_red)
+            +a8.*x_red.*(x_red.*x_red - 3.0.*y_red.*y_red) + a7.*y_red.*(3.0.*x_red.*x_red - y_red.*y_red)
+            -4.0.*a10.*x_red.*y_red.*(x_red.*x_red - y_red.*y_red)
+            +a9.*( x_red.^4.0 + y_red.^4.0 - 6.0.*(x_red*y_red).^2.0)
+
+    dx::Vector{T} = a1+a3.*x_red-a4.*y_red - 2.0.*a6.*x_red.*y_red + a5.*( x_red.*x_red - y_red.*y_red )
+            +a7.*x_red.*(x_red.*x_red-3.0.*y_red.*y_red) - a8.*y_red.*(3.0.*x_red.*x_red-y_red.*y_red)
+            +4.0.*a9.*y_red.*x_red.*(x_red.*x_red-y_red.*y_red)
+            +10.0.*( x_red.^4.0 +y_red.^4.0 - 6.0.*(x_red*y_red).^2.0 )
 
     return dy, dx
 end

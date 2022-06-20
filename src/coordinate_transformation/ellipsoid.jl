@@ -8,22 +8,22 @@ module ellipsoid
 
     # Arguments
     - `name::AbstractString` the name of the reference ellipsoid
-    - `a_axis::Real` value of the semi-major axis
-    - `b_axis::Real` value of the semi-minor axis
+    - `a_axis::AbstractFloat` value of the semi-major axis
+    - `b_axis::AbstractFloat` value of the semi-minor axis
 
     # Examples
     ```jldoctest
     julia> Ellipsoid("World geodetic system 1984", 6378137.000, 6356752.31424518)
     ```
     """
-    mutable struct Ellipsoid
+    mutable struct Ellipsoid{T<:AbstractFloat}
         name::String
-        a_axis::Float64
-        b_axis::Float64
-        eccentricity::Float64
+        a_axis::T
+        b_axis::T
+        eccentricity::T
 
-        function Ellipsoid(name::AbstractString, a_axis::Real, b_axis::Real)
-            this = new()
+        function Ellipsoid(name::AbstractString, a_axis::T, b_axis::T) where {T<:AbstractFloat}
+            this = new{T}()
 
             this.name = name
             this.a_axis = a_axis
@@ -36,6 +36,6 @@ module ellipsoid
     end
    
     
-    const wgs84 = Ellipsoid("World geodetic system 1984", 6378137.000, 6356752.31424518)
-    const grs80 = Ellipsoid("Geodetic reference system 1980",6378137.000, 6356752.31424518)
+    grs80 = Ellipsoid("Geodetic reference system 1980",6378137.000, 6356752.31424518)
+    wgs84 = Ellipsoid("World geodetic system 1984", 6378137.000, 6356752.31424518)
 end # ellipsoid module

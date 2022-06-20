@@ -16,42 +16,42 @@ the  ETRF2000 and S-JTKS (Bessel).
 - `rmat::Matrix{T}` rotation matrix
 - `tmat::Vector{T}` translation vector
 """
-function get_transformation_parameters::T(transformation::Integer) where (T<:Real)
+function get_transformation_parameters(transformation::Integer) where (T<:AbstractFloat)
     # rho is constant for converting the arcseconds to radians
     rho::T = 206264.80624709636;
 
+    t1::T, t2::T, t3::T, p1::T, p2::T, p3::T, mscale::T, rmat::Matrix{T}, tmat::Vector{T};
     if transformation == 1
         # Parameters for converting ETRF2000 to JTSK05
-        t1::T = -572.203
-        t2::T = -85.328 
-        t3::T = -461.934 
+        t1 = -572.203
+        t2 = -85.328 
+        t3 = -461.934 
+        p1 =  5.24832714/rho
+        p2 =  1.52900087/rho
+        p3 =  4.97311727/rho
 
-        p1::T =  5.24832714/rho
-        p2::T =  1.52900087/rho
-        p3::T =  4.97311727/rho
-
-        mscale::T = 1+(-3.5393e-6)
-        rmat::Matrix{T} = [1 p1 -p2; -p1 1 p3; p2 -p3 1];
-        tmat::Matrix{T} = [t1; t2; t3];
-
-        return mscale, rmat, tmat
+        mscale = 1+(-3.5393e-6)
+        rmat = [1 p1 -p2; -p1 1 p3; p2 -p3 1];
+        tmat = [t1; t2; t3];
     elseif transformation == -1
         # Parameters for converting JTSK05 to ETRF2000
-        t1::T = 572.213
-        t2::T = 85.334
-        t3::T = 461.940
-        p1::T = -5.24836073/rho
-        p2::T = -1.52899176/rho
-        p3::T = -4.97316164/rho
+        t1 = 572.213
+        t2 = 85.334
+        t3 = 461.940
+        p1 = -5.24836073/rho
+        p2 = -1.52899176/rho
+        p3 = -4.97316164/rho
 
-        mscale::T = 1+(3.5378e-6)
-        rmat::Matrix{T} = [1 p1 -p2; -p1 1 p3; p2 -p3 1];
-        tmat::Matrix{T} = [t1; t2; t3];
+        mscale = 1+(3.5378e-6)
+        rmat = [1 p1 -p2; -p1 1 p3; p2 -p3 1];
+        tmat = [t1; t2; t3];
 
-        return mscale, rmat, tmat
+
     else
         error("Transformation type not supported")
     end
+
+    return mscale, rmat, tmat
 end
 
 """
@@ -75,7 +75,7 @@ The parameters are:
 julia> 
 ```
 """
-function bessel2etrf::T( x::T, y::T, z::T ) where (T<:Real)
+function bessel2etrf( x::T, y::T, z::T ) where (T<:AbstractFloat)
     mscale, rmat, tmat = get_transformation_parameters(1);
 
     # Transformation
@@ -106,7 +106,7 @@ The parameters are:
 julia>
 ```
 """
-function etrf2bessel::T() where (T<:Real)
+function etrf2bessel(x::T, y::T, z::T) where (T<:AbstractFloat)
     mscale, rmat, tmat = get_transformation_parameters(-1);
 
     # Transformation
@@ -138,7 +138,7 @@ The parameters are:
 julia>
 ```
 """
-function bessel2etrf::T( x::Vector{T}, y::Vector{T}, z::Vector{T} ) where (T<:Real)
+function bessel2etrf( x::Vector{T}, y::Vector{T}, z::Vector{T} ) where (T<:AbstractFloat)
     # create a matrix with the cartesian coordinates
     xyz::Matrix{T} = [x, y, z]
 
@@ -171,7 +171,7 @@ The parameters are:
 julia>
 ```
 """
-function etrf2bessel::T( x::Vector{T}, y::Vector{T}, z::Vector{T} ) where (T<:Real)
+function etrf2bessel( x::Vector{T}, y::Vector{T}, z::Vector{T} ) where (T<:AbstractFloat)
     # create a matrix with the cartesian coordinates
     xyz::Matrix{T} = [x, y, z]
 
@@ -183,3 +183,20 @@ function etrf2bessel::T( x::Vector{T}, y::Vector{T}, z::Vector{T} ) where (T<:Re
 
     return x_bessel + tmat[1], y_bessel + tmat[2], z_bessel + tmat[3]
 end
+
+function test_template() where (T<:AbstractFloat)
+    x::T = round( T , 1.0)
+
+    if x isa Float64
+        println("Data type is Float64")
+    elseif x isa Float32
+        println("Data type is Float32")
+    elseif x isa Int64
+        println("Data type is Int64")
+    else
+        println("Data type is unknown")
+    end
+
+    return x
+end
+        
