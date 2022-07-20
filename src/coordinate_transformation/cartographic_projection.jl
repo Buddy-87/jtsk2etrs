@@ -1,5 +1,23 @@
 import .Base: sin, cos, tan, asin, deg2rad, rad2deg, abs
              acos, atan, sqrt, max, min, minmax, ^
+"""
+TUBO 49° 12' 21.20976"	 	16° 35' 34.20421"	 	324.374	 	0.3107
+     49.2058916             16.592834502777777
+     599 131.597            1 159 442.044
+
+bTubo = 49.2058916;
+lTubo = 16.592834502777777;
+hTubo = 324.374	;
+
+xt, yt, zt = blh2xyz(bTubo, lTubo, hTubo, wgs84)
+xbt,ybt,zbt=etrf2bessel(xt,yt,zt)
+bbt, lbt, hbt = xyz2blh(xbt, ybt, zbt, bessel)
+
+(49.204101717107235, 16.591509006826552, 1497.4366400362924)
+
+bl2jtsk(49.204101717107235, 16.591509006826552)
+"""
+
 
 """
 Converting the geodetic latitude and longitude (reference ellipsoid is Bessel)
@@ -12,6 +30,17 @@ multiple steps (workflow):
 - rectangular coordinates in the plane (JTSK coordinates) (y, x)
 
 Coordinates of the shifted pole are phi_Q = 48°15', lambda_Q = 42°30'.
+
+Constants :
+
+``\\varphi_0 = 49^\\circ 30'``
+
+``\\alpha = \\sqrt{1 + \\frac{e^2 \\cos^4 \\varphi_0}{1-e^2}}``
+
+`` U_0 = \\asin \\frac{\\sin \\varphi_0}{\\alpha} ``
+
+`` g_{\\varphi_0} = \\left( \\frac{1 + e \\sin \\varphi_0}{1 - e \\sin \\varphi_0} \\right)^{\\alpha e / 2} ``
+
 # Arguments
 - `b::T` geodetic latitude in DEG on Bessel's ellipsoid
 - `l::T` geodetic longitude in DEG on Bessel's ellipsoid
@@ -22,34 +51,39 @@ Coordinates of the shifted pole are phi_Q = 48°15', lambda_Q = 42°30'.
 
 
 # Example
-```jldoctest{T<:AbstractFloat}
-julia> bl2jtsk(,)
+```jldoctest
+# b = 50˚ 57' 8.3936'', l = 14° 34' 51.1547''
+julia> bl2jtsk(50.95233155555556, 14.580876305555556)
 (,) 
 ```
 """
 function bl2jtsk(b::T, l::T) where (T<:AbstractFloat)
-    rho_0::T = 1298039.004638987
-    s_0::T   = deg2rad(78.50000)
-    n::T     = 0.9799247046208300
-    alpha::T = 1.000597498371542
-    k::T     = 0.996592486900000 # 1.003419163966575
-    e::T     = 0.816968310215303e-1
-    vk::T    = deg2rad(42. + 31.0/60. + 31.41725/3600.0)
-    uk::T    = deg2rad(59. + 42.0/60. + 42.6968885/3600.0)
-    u0::T    = deg2rad(49. + 27.0/60. + 32.84625/3600.0)
+    rho_0::T = 1298039.00463898700
+    s_0::T   = 1.37008346281554870 # 78°30'
+    n0::T    = 0.97992470462083000
+    alpha::T = 1.00059749837154240 # s
+    k::T     = 0.99659248690000000 # 1.003419163966575
+    e::T     = 0.08169683121529256
+    g::T     = 1.00509776241540980 # `` g( \varphi_0) ``
+    vk::T    = 0.74220813543248410 # 42°31'31.41725'' 
+    uk::T    = 1.04216856379747100 # 59˚42'42.6968885''
+    u0::T    = 0.86322455822492750
+    uQ::T    = 1.04216856379747100 # 59˚42'42.6968885''
 
     # (b,l) >> (U,V)
     phi::T = deg2rad(b);
-    u::T = 0.2e1 * atan((tan(phi/ 2.0 + pi/4.0 ) * ( (1. - e * sin(phi)) / (1. + e * sin(phi)))^(e / 2.))^alpha) / k - pi/2.0;
-    v::T = alpha * deg2rad(l + 17+36.0/60.0+46.002/3600.0); # CUZK -> 17°40'
+    gphi::T = ((1.0 + e * sin(phi))/(1.0 - e * sin(phi)))^(alpha * e / 2.0)
+
+    u::T = 2.0 * (atan(k * (tan(phi/2.0 + pi/4.0))^(alpha)/gphi) - pi/4.0)
+    dv::T = alpha * deg2rad(24.933333333333334 - l)
 
     # (U,V) >> (S,D)
-    s::T = asin(sin(u) * sin(uk) + cos(u) * cos(uk) * cos(vk - v));
-    d::T = asin(cos(u) * sin(vk - v) / cos(s));
+    s::T = asin(sin(u) * sin(uk) + cos(u) * cos(uQ) * cos(dv));
+    d::T = asin(cos(u) * sin(dv) / cos(s));
 
     # (S,D) >> (rho, epsilon)
-    rho::T = rho_0 * (tan(s_0 /2. + pi/4.0) / tan(s / 2.0 + pi/4.0))^n
-    epsilon::T = n * d;
+    rho::T = rho_0 * (tan(s_0 /2. + pi/4.0) / tan(s / 2.0 + pi/4.0))^n0
+    epsilon::T = n0 * d;
 
     # (\rho, \vaerpsilon) >> (Y,X)
     x::T = rho * cos(epsilon);
@@ -162,7 +196,7 @@ julia> bl2jtsk(,)
 ```
 """
 function bl2jtsk05( b::T, l::T ) where (T<:AbstractFloat)
-    y::T,x::T = bl2jtsk{T}(b, l)
+    y::T,x::T = bl2jtsk(b, l)
     dy::T, dx::T = interpolate_correction(y,x);
 
     return y - dy, x - dx;
@@ -229,8 +263,8 @@ function interpolate_correction(y::T, x::T) where (T<:AbstractFloat)
     a9::T  = -0.8331083518e-23
     a10::T = -0.3689471323e-23
 
-    x_red::T = x - 1089000
-    y_red::T = y - 654000
+    x_red::T = x - 1089000.0
+    y_red::T = y - 654000.0
 
     dy::T = a2+a3*y_red + a4*x_red + 2.0*a5*y_red*x_red + a6*(x_red*x_red - y_red*y_red)
             +a8*x_red*(x_red*x_red - 3.0*y_red*y_red) + a7*y_red*(3.0*x_red*x_red - y_red*y_red)
@@ -273,18 +307,18 @@ function interpolate_correction(y::Vector{T}, x::Vector{T}) where (T<:AbstractFl
     a9::T  = -0.8331083518e-23
     a10::T = -0.3689471323e-23
 
-    x_red::Vector{T} = x - 1089000
-    y_red::Vector{T} = y - 654000
+    x_red::Vector{T} = x .- 1089000
+    y_red::Vector{T} = y .- 654000
 
-    dy::Vector{T} = a2+a3.*y_red + a4.*x_red + 2.0.*a5.*y_red.*x_red + a6.*(x_red.*x_red - y_red.*y_red)
-            +a8.*x_red.*(x_red.*x_red - 3.0.*y_red.*y_red) + a7.*y_red.*(3.0.*x_red.*x_red - y_red.*y_red)
-            -4.0.*a10.*x_red.*y_red.*(x_red.*x_red - y_red.*y_red)
-            +a9.*( x_red.^4.0 + y_red.^4.0 - 6.0.*(x_red*y_red).^2.0)
+    dy::Vector{T} = a2.+a3.*y_red .+ a4.*x_red .+ 2.0.*a5.*y_red.*x_red .+ a6.*(x_red.*x_red .- y_red.*y_red)
+            .+a8.*x_red.*(x_red.*x_red .- 3.0.*y_red.*y_red) .+ a7.*y_red.*(3.0.*x_red.*x_red .- y_red.*y_red)
+            .-4.0.*a10.*x_red.*y_red.*(x_red.*x_red .- y_red.*y_red)
+            .+a9.*( x_red.^4.0 .+ y_red.^4.0 .- 6.0.*(x_red.*y_red).^2.0)
 
-    dx::Vector{T} = a1+a3.*x_red-a4.*y_red - 2.0.*a6.*x_red.*y_red + a5.*( x_red.*x_red - y_red.*y_red )
-            +a7.*x_red.*(x_red.*x_red-3.0.*y_red.*y_red) - a8.*y_red.*(3.0.*x_red.*x_red-y_red.*y_red)
-            +4.0.*a9.*y_red.*x_red.*(x_red.*x_red-y_red.*y_red)
-            +10.0.*( x_red.^4.0 +y_red.^4.0 - 6.0.*(x_red*y_red).^2.0 )
+    dx::Vector{T} = a1.+a3.*x_red-a4.*y_red .- 2.0.*a6.*x_red.*y_red .+ a5.*( x_red.*x_red .- y_red.*y_red )
+            .+a7.*x_red.*(x_red.*x_red.-3.0.*y_red.*y_red) .- a8.*y_red.*(3.0.*x_red.*x_red.-y_red.*y_red)
+            .+4.0.*a9.*y_red.*x_red.*(x_red.*x_red.-y_red.*y_red)
+            .+10.0.*( x_red.^4.0 .+y_red.^4.0 .- 6.0.*(x_red.*y_red).^2.0 )
 
     return dy, dx
 end
