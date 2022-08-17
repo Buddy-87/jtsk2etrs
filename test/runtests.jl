@@ -82,3 +82,18 @@ end
     @namedtest "CZEPOS::vector coordinates etrf   >> bessel >> etrf"   isapprox([xvec, yvec, zvec], [xetrf, yetrf, zetrf], atol=1e-3)
     @namedtest "CZEPOS::vector coordinates bessel >> etrf   >> bessel" isapprox([xbes, ybes, zbes], [xbes2, ybes2, zbes2], atol=1e-3)
 end
+
+@testset "Geodetic computations on the sphere" begin
+    b1::Float64 = 49.2058916 # Tubo coordinates
+    l1::Float64 = 16.592834502777777     # Tubo coordinates
+    h1::Float64 = 324.374 # Tubo coordinates
+
+    b2::Float64 = 39.208916 # 
+    l2::Float64 = 10.592646 # 
+    h2::Float64 = 212.32100 # 
+
+    b3  ::Float64 = 44.208916 # 
+    l3  ::Float64 = 15.511246 # 
+    h3  ::Float64 = -112.3210 # 
+
+end

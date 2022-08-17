@@ -7,7 +7,7 @@ TUBO 49° 12' 21.20976"	 	16° 35' 34.20421"	 	324.374	 	0.3107
 
 bTubo = 49.2058916;
 lTubo = 16.592834502777777;
-hTubo = 324.374	;
+hTubo = 324.374;
 
 xt, yt, zt = blh2xyz(bTubo, lTubo, hTubo, wgs84)
 xbt,ybt,zbt=etrf2bessel(xt,yt,zt)
@@ -62,27 +62,27 @@ function bl2jtsk(b::T, l::T) where (T<:AbstractFloat)
     s_0::T   = 1.37008346281554870 # 78°30'
     n0::T    = 0.97992470462083000
     alpha::T = 1.00059749837154240 # s
-    k::T     = 0.99659248690000000 # 1.003419163966575
+    k::T     = 1.00341916396657260 # 0.99659248690000000
     e::T     = 0.08169683121529256
     g::T     = 1.00509776241540980 # `` g( \varphi_0) ``
     vk::T    = 0.74220813543248410 # 42°31'31.41725'' 
-    uk::T    = 1.04216856379747100 # 59˚42'42.6968885''
-    u0::T    = 0.86322455822492750
-    uQ::T    = 1.04216856379747100 # 59˚42'42.6968885''
+    uk::T    = 1.04216856380474300 # 59˚42'42.6968885''
+    u0::T    = 0.86323910265848790
 
     # (b,l) >> (U,V)
     phi::T = deg2rad(b);
     gphi::T = ((1.0 + e * sin(phi))/(1.0 - e * sin(phi)))^(alpha * e / 2.0)
 
+    # u::T = 2.0 * (atan(k * (tan(1.2173671532660448))^(alpha)/gphi) - pi/4.0)
     u::T = 2.0 * (atan(k * (tan(phi/2.0 + pi/4.0))^(alpha)/gphi) - pi/4.0)
-    dv::T = alpha * deg2rad(24.933333333333334 - l)
+    dv::T = alpha * deg2rad(24.833333333333332 - l)
 
     # (U,V) >> (S,D)
-    s::T = asin(sin(u) * sin(uk) + cos(u) * cos(uQ) * cos(dv));
+    s::T = asin(sin(u) * sin(uk) + cos(u) * cos(uk) * cos(dv));
     d::T = asin(cos(u) * sin(dv) / cos(s));
 
     # (S,D) >> (rho, epsilon)
-    rho::T = rho_0 * (tan(s_0 /2. + pi/4.0) / tan(s / 2.0 + pi/4.0))^n0
+    rho::T = rho_0 * (tan(s_0 /2.0 + pi/4.0) / tan(s / 2.0 + pi/4.0))^n0
     epsilon::T = n0 * d;
 
     # (\rho, \vaerpsilon) >> (Y,X)
@@ -118,39 +118,41 @@ julia> jtsk2bl(,)
 (,) 
 ```
 """
-function jtsk2bl( y::T, x::T) where (T<:AbstractFloat)
-    rho_0::T = 1298039.004638987
-    s_0::T   = deg2rad(78.50000)
-    n::T     = 0.9799247046208300
-    alpha::T = 1.000597498371542
-    k::T     = 0.996592486900000 # 1.003419163966575
-    e::T     = 0.816968310215303e-1
-    vk::T    = deg2rad(42. + 31.0/60. + 31.41725/3600.0)
-    uk::T    = deg2rad(59. + 42.0/60. + 42.6968885/3600.0)
-    u0::T    = deg2rad(49. + 27.0/60. + 32.84625/3600.0)
+function jtsk2bl(y::T, x::T) where (T<:AbstractFloat)
+    rho_0::T = 1298039.00463898700
+    s_0::T   = 1.37008346281554870 # 78°30'
+    n0::T    = 0.97992470462083000 # sin(s_0)
+    alpha::T = 1.00059749837154240 # s
+    k::T     = 1.00341916396657260 # 0.99659248690000000
+    e::T     = 0.08169683121529256
+    g::T     = 1.00509776241540980 # `` g( \varphi_0) ``
+    vk::T    = 0.74220813543248410 # 42°31'31.41725'' 
+    uk::T    = 1.04216856380474300 # 59˚42'42.6968885''
+    u0::T    = 0.86323910265848790
 
     # ((\rho, \vaerpsilon) << (Y,X)
     rho::T = sqrt(x*x+y*y);
     epsilon::T = atan(y/x);
 
     # (S,D) << (\rho, \vaerpsilon)
-    d::T = epsilon/n ;
-    s::T = 2.0*atan((rho_0/rho)^(1.0/n) * tan( s_0/2. + pi/4.0)) - pi/2.0;
+    d::T = epsilon/n0;
+    s::T = 2.0*(atan((rho_0/rho)^(1.0/n0) * tan(s_0/2. + pi/4.0)) - pi/4.0);
 
     # (U,V) << (S,D)
     u::T = asin( sin(uk)*sin(s) - cos(uk)*cos(s)*cos(d));
-    delta_v::T = asin( sin(d)*cos(s)/cos(u));
+    dv::T = asin( sin(d)*cos(s)/cos(u));
 
     # (phi,lambda) << (U,V)
-    lambda::T = (vk - delta_v)/alpha - 0.3074009723405860142863407 ;
+    lambda::T = (0.433423430912-dv/alpha)
     phi_i::T = u 
     phi_ii::T = u
     dphi::T =9999
     loop_cnt::Int8 = 0
 
     while ( abs( dphi ) >= deg2rad(0.000001/3600) )
-        phi_ii = 2.0* atan((k * tan( u/2.0 + pi/4.0 ))^(1.0/alpha) 
-                         * ((1.0-e*sin(phi_i))/(1.0+e*sin(phi_i)))^(-e/2.0 )) - pi/2.0;
+        gprime_phi::T = ((1.0 + e * sin(phi_i))/(1.0 - e * sin(phi_i)))
+
+        phi_ii = 2.0*(atan(k^(-1.0/alpha) * (tan(u/2.0 + pi/4.0))^(1.0/alpha) * gprime_phi^(e/2.0) ) - pi/4.0)
         dphi = phi_ii - phi_i;
         phi_i = phi_ii;
 

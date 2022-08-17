@@ -5,7 +5,6 @@ import .Base: sin, cos, tan, asin,
 
 include("./ellipsoid.jl")
 
-import .ell
 """
 Converting cartesian perpendicular cartesian coordinates x,y,z
 to geodetic latitude, longtitude, ellipsoidal height.

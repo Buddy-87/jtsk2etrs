@@ -1,65 +1,94 @@
-    import .Base.Filesystem.isfile
+import .Base.Filesystem.isfile
 
-    function file_exist(fname::AbstractString)::Bool
-        exist::Bool = false
-        try        
-            f = open(fname, "r")
-            isfile(f) == true ? exist = true :
-            close(f)
-            return exist
-        catch
-            return exist
-        end
-    end 
+using HDF5
 
-    function load_points_from_file(fname::AbstractString)
+function file_exist(fname::AbstractString)::Bool
+    exist::Bool = false
+    try        
         f = open(fname, "r")
-
-        if isfile(f)
-
-        else
-            error("Can not access the file '$fname'.") 
-        end
-
+        isfile(f) == true ? exist = true :
         close(f)
+        return exist
+    catch
+        return exist
+    end
+end 
+
+function load_points_from_file(fname::AbstractString)
+    f = open(fname, "r")
+
+    if isfile(f)
+
+    else
+        error("Can not access the file '$fname'.") 
     end
 
+    close(f)
+end
 
 
-    """
-    Load data from a file in HDF5 format. The data stored in this file are:
-    - `Data_names` : a list of strings with the names of the data
-    - `table_v1202_header` : a table v1202 header listing the basic grid info
-    - `table_y_3_v1202` : a table with the y corrections for the v1202 data
-    - `table_x_3_v1202` : a table with the x corrections for the v1202 data
-    - `table_v1710_header` : a table v1710 header listing the basic grid info
-    - `table_y_3_v1710` : a table with the y corrections for the v1710 data
-    - `table_x_3_v1710` : a table with the x corrections for the v1710 data
-    - #TODO geoid header vector
-    - `CZE_qgeoid_2005_v1005`` : a table with the undulation corrections for the CZE quasigeoid 2005 model
 
-    # Arguments
-    - `fname`: name of the file to load
-    # Returns
-    - `data`: a dictionary with the data
-    """
-    function load_table(fname::AbstractString)
+"""
+Load data from a file in HDF5 format. The data stored in this file are:
+- `Data_names` : a list of strings with the names of the data
+- `table_v1202_header` : a table v1202 header listing the basic grid info
+- `table_y_3_v1202` : a table with the y corrections for the v1202 data
+- `table_x_3_v1202` : a table with the x corrections for the v1202 data
+- `table_v1710_header` : a table v1710 header listing the basic grid info
+- `table_y_3_v1710` : a table with the y corrections for the v1710 data
+- `table_x_3_v1710` : a table with the x corrections for the v1710 data
+- #TODO geoid header vector
+- `CZE_qgeoid_2005_v1005`` : a table with the undulation corrections for the CZE quasigeoid 2005 model
 
-        if file_exist(fname)
-            h5open(fname, "r") do file
-                vector_names = read(file, "Data_names")
-                table_v1202_header = read(file, "table_v1202_header")
-                table_y_3_v1202 = read(file, "table_y_3_v1202")
-                table_x_3_v1202 = read(file, "table_x_3_v1202")
-                table_v1710_header = read(file, "table_v1710_header")
-                table_y_3_v1710 = read(file, "table_y_3_v1710")
-                table_x_3_v1710 = read(file, "table_x_3_v1710")
-                CZE_qgeoid_2005_v1005 = read(file, "CZE_qgeoid_2005_v1005")
+# Arguments
+- `fname`: name of the file to load
+# Returns
+- `data`: a dictionary with the data
+
+# Example
+```
+data = load_table("yx_transformation_tables.hdf5", ["table_v1005_header", "table_y_3_v1005", "table_x_3_v1005"])
+```
+"""
+function load_table(fname::AbstractString, data_req::AbstractVector)
+    if isempty(data_req)
+        # if data_req is empty returns empty Vector{Any}
+        return Any[]
+    end
+
+    if file_exist(fname)
+        data = Any[]
+
+        h5open(fname, "r") do file
+            for read_data in data_req
+                if read_data == "table_v1005_header"
+                    push!(data, read(file, "table_v1005_header"))
+                elseif read_data == "table_y_3_v1005"
+                    push!(data, read(file, "table_y_3_v1005"))
+                elseif read_data == "table_x_3_v1005"
+                    push!(data, read(file, "table_x_3_v1005"))
+                elseif read_data == "table_v1202_header"
+                    push!(data, read(file, "table_v1202_header"))
+                elseif read_data == "table_y_3_v1202"
+                    push!(data, read(file, "table_y_3_v1202"))
+                elseif read_data == "table_x_3_v1202"
+                    push!(data, read(file, "table_x_3_v1202"))
+                elseif read_data == "table_v1710_header"
+                    push!(data, read(file, "table_v1710_header"))
+                elseif read_data == "table_y_3_v1710"
+                    push!(data, read(file, "table_y_3_v1710"))
+                elseif read_data == "table_x_3_v1710"
+                    push!(data, read(file, "table_x_3_v1710"))
+                elseif read_data == "CZE_qgeoid_2005_v1005"
+                    push!(data, read(file, "CZE_qgeoid_2005_v1005"))
+                else
+                    @warn "Requested \"$read_data\" are not supported. See the documentation."
+                end
             end
-        else 
-            error("Can not access the file '$fname'.") 
         end
 
-
-        return vector_names, table_v1202_header, table_y_3_v1202, table_x_3_v1202, table_v1710_header, table_y_3_v1710, table_x_3_v1710, CZE_qgeoid_2005_v1005
+        return data
+    else 
+        error("Can not access the file '$fname'.") 
     end
+end

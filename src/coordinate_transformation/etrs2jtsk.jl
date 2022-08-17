@@ -28,8 +28,8 @@ function get_transformation_parameters(transformation::T) where (T<:AbstractFloa
 
     transformation = round(Integer, transformation);
 
-    if transformation == 1
-        # Parameters for converting ETRF2000 to JTSK05
+    if transformation == -1
+        # Parameters for converting JTSK05 to ETRF2000
         t1::T = -572.203
         t2::T = -85.328 
         t3::T = -461.934 
@@ -42,8 +42,8 @@ function get_transformation_parameters(transformation::T) where (T<:AbstractFloa
         tmat::Vector{T} = [t1; t2; t3];
 
         return mscale, rmat, tmat
-    elseif transformation == -1
-        # Parameters for converting JTSK05 to ETRF2000
+    elseif transformation == +1
+        # Parameters for converting ETRF2000 to JTSK05
         tt1::T = 572.213
         tt2::T = 85.334
         tt3::T = 461.940
