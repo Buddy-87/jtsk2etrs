@@ -131,7 +131,7 @@ mutable struct Geoid{T<:AbstractFloat}
     end
 end # Geoid
 
-function interpolate(g::Geoid{T}, b::T, l::T, algorithm::AbstractString="nearest") where (T<:AbstractFloat)
+function interpolate_geoid(g::Geoid{T}, b::T, l::T, algorithm::AbstractString="nearest") where (T<:AbstractFloat)
     # check if the coordinates are within the range of the geoid
     if b < g.bmin || b > g.bmax || l < g.lmin || l > g.lmax
         error("Coordinates are outside the range of the geoid.")

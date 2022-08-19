@@ -1,36 +1,32 @@
 import .Base.Filesystem.isfile
+import DelimitedFiles: readdlm
 
 using HDF5
 
 function file_exist(fname::AbstractString)::Bool
-    exist::Bool = false
     try        
-        f = open(fname, "r")
-        isfile(f) == true ? exist = true :
-        close(f)
-        return exist
+        open(fname, "r") do _ end
+        return true
     catch
-        return exist
+        return false
     end
 end 
 
 function load_points_from_file(fname::AbstractString)
-    f = open(fname, "r")
-
-    if isfile(f)
-
+    if file_exist(fname)
+        return readdlm(fname)
     else
         error("Can not access the file '$fname'.") 
     end
-
-    close(f)
 end
 
 
 
 """
 Load data from a file in HDF5 format. The data stored in this file are:
-- `Data_names` : a list of strings with the names of the data
+- `table_v1005_header` : a table v1005 header listing the basic grid info
+- `table_y_3_v1005` : a table with the y corrections for the v1005 data
+- `table_x_3_v1005` : a table with the x corrections for the v1005 data
 - `table_v1202_header` : a table v1202 header listing the basic grid info
 - `table_y_3_v1202` : a table with the y corrections for the v1202 data
 - `table_x_3_v1202` : a table with the x corrections for the v1202 data
@@ -91,4 +87,4 @@ function load_table(fname::AbstractString, data_req::AbstractVector)
     else 
         error("Can not access the file '$fname'.") 
     end
-end
+end 

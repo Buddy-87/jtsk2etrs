@@ -92,6 +92,40 @@ function bl2jtsk(b::T, l::T) where (T<:AbstractFloat)
     return y, x;
 end
 
+function bl2jtsk(b::Vector{T}, l::Vector{T}) where (T<:AbstractFloat)
+    rho_0::T = 1298039.00463898700
+    s_0::T   = 1.37008346281554870 # 78°30'
+    n0::T    = 0.97992470462083000
+    alpha::T = 1.00059749837154240 # s
+    k::T     = 1.00341916396657260 # 0.99659248690000000
+    e::T     = 0.08169683121529256
+    g::T     = 1.00509776241540980 # `` g( \varphi_0) ``
+    vk::T    = 0.74220813543248410 # 42°31'31.41725'' 
+    uk::T    = 1.04216856380474300 # 59˚42'42.6968885''
+    u0::T    = 0.86323910265848790
+
+    # (b,l) >> (U,V)
+    phi::Vector{T} = deg2rad.(b);
+    gphi::Vector{T} = ((1.0 .+ e .* sin.(phi))./(1.0 .- e .* sin.(phi))).^(alpha * e / 2.0)
+
+    u::Vector{T} = 2.0 .* (atan.(k .* (tan.(phi/2.0 .+ pi/4.0)).^(alpha)./gphi) .- pi/4.0)
+    dv::Vector{T} = alpha .* deg2rad.(24.833333333333332 .- l)
+
+    # (U,V) >> (S,D)
+    s::Vector{T} = asin.(sin.(u) .* sin.(uk) .+ cos.(u) .* cos.(uk) .* cos.(dv));
+    d::Vector{T} = asin.(cos.(u) .* sin.(dv) ./ cos.(s));
+
+    # (S,D) >> (rho, epsilon)
+    rho::Vector{T} = rho_0 .* (tan.(s_0 ./2.0 .+ pi/4.0) ./ tan.(s ./ 2.0 .+ pi/4.0)).^n0
+    epsilon::Vector{T} = n0 .* d;
+
+    # (\rho, \vaerpsilon) >> (Y,X)
+    x::Vector{T} = rho .* cos.(epsilon);
+    y::Vector{T} = rho .* sin.(epsilon);
+
+    return y, x;
+end
+
 """
 Converting 2D cartographic coordinates from the JTSK projection (y,x) 
 to the geodetic latitude and longitude (reference ellipsoid is Bessel). 
@@ -169,6 +203,19 @@ function jtsk2bl(y::T, x::T) where (T<:AbstractFloat)
     return b,l
 end
 
+function jtsk2bl(y::Vector{T}, x::Vector{T}) where (T<:AbstractFloat)
+    n::Int64 = length(y)
+
+    b::Vector{T} = Vector{T}(undef, n)
+    l::Vector{T} = Vector{T}(undef, n)
+
+    for i=1:n
+        b[i], l[i] = jtsk2bl(y[i], x[i])
+    end
+
+    return b, l
+end
+
 
 """
 Converting the geodetic latitude and longitude (reference ellipsoid is Bessel)
@@ -204,6 +251,13 @@ function bl2jtsk05( b::T, l::T ) where (T<:AbstractFloat)
     return y - dy, x - dx;
 end
 
+function bl2jtsk05( b::Vector{T}, l::Vector{T} ) where (T<:AbstractFloat)
+    y::Vector{T},x::Vector{T} = bl2jtsk(b, l)
+    dy::Vector{T}, dx::Vector{T} = interpolate_correction(y,x);
+
+    return y .- dy, x .- dx;
+end
+
 """
 Converting 2D cartographic coordinates from the JTSK05 projection (y,x) 
 to the geodetic latitude and longitude (reference ellipsoid is Bessel). 
@@ -234,6 +288,11 @@ julia> jtsk052bl(,)
 function jtsk052bl( y::T, x::T) where (T<:AbstractFloat)
     dy::T, dx::T = interpolate_correction(y,x);
     return jtsk2bl(y + dy, x + dx);
+end
+
+function jtsk052bl( y::Vector{T}, x::Vector{T}) where (T<:AbstractFloat)
+    dy::Vector{T}, dx::Vector{T} = interpolate_correction(y,x);
+    return jtsk2bl(y .+ dy, x .+ dx);
 end
 
 """
