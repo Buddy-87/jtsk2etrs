@@ -1,5 +1,6 @@
 using Test
 using jtsk2etrs
+using DelimitedFiles
 
 # Simple macro to allow named tests
 macro namedtest(name, test)
@@ -50,9 +51,33 @@ end
 end
 
 @testset "Testing the cartographic projection for JTSK and JTSK05" begin
-    b, l = jtsk2bl(712201.2924148451, 1.5644015536543208e6)
+    # Input data
 
-    # @namedtest "Converting JTSK yx to geodetic bl" isapprox([b,l], [45.15, 15.76823], atol=1e-5)
+    CZEPOS = [50.0395477722222     15.7832459250000     283.270;
+              49.7578205916667     16.4713079055556     498.442;
+              49.3935539138889     15.5863957277778     576.839];
+
+    CZEPOS_JTSK = [ 646770.291     1060714.224     239.249;
+                    601225.866     1097469.492     453.640; 
+                    669458.545     1130343.549     530.747];
+
+    x_etrs, y_etrs, z_etrs = blh2xyz(CZEPOS[:,1], CZEPOS[:,2], CZEPOS[:,3], wgs84)
+    x_bessel, y_bessel, z_bessel = etrf2bessel(x_etrs, y_etrs, z_etrs)
+    b_bessel, l_bessel, h_bessel = xyz2blh(x_bessel, y_bessel, z_bessel, bessel)
+    
+    data = load_table("../data/yx_transformation_tables.hdf5", ["table_v1202_header", "table_y_3_v1202", "table_x_3_v1202"])
+    table1202 = Table("table_v1202", data[1], data[2], data[3])
+    
+    y_jtsk, x_jtsk = bl2jtsk05(b_bessel, l_bessel)
+     
+    n = lastindex(y_jtsk)
+    for i=1:n
+        dy, dx = bilinear_interpolation(table1202, y_jtsk[i], x_jtsk[i])    
+        y_jtsk[i] -= dy
+        x_jtsk[i] -= dx
+    end
+
+    @namedtest "Converting BLH (ETRF) to YX (JTSK)" isapprox([CZEPOS_JTSK[:,1],CZEPOS_JTSK[:,2]], [y_jtsk, x_jtsk], atol=5e-2)
 end
 
 @testset "3D transformation between the WGS84 ellipsoid and Bessel's" begin
@@ -64,7 +89,7 @@ end
     xtubo_bes, ytubo_bes, ztubo_bes = etrf2bessel(xtubo_wgs, ytubo_wgs, ztubo_wgs)
     xtubo_etrf, ytubo_etrf, ztubo_etrf = bessel2etrf(xtubo_bes, ytubo_bes, ztubo_bes)
 
-    @namedtest "Tubo 'xyz' coordinates etrf2bessel::scalar" isapprox([xtubo_bes, ytubo_bes, ztubo_bes],[4.0020623292969726e6, 1.1924208321677265e6, 4.8062734167892095e6], atol=1e-5 )
+    @namedtest "Tubo 'xyz' coordinates etrf2bessel::scalar" isapprox([xtubo_bes, ytubo_bes, ztubo_bes],[4.0008790235625138e6, 1.1922698393427785e6, 4.805317359774744e6], atol=1e-5 )
     @namedtest "Tubo 'xyz' reverse transformation bessel2etrf::scalar" isapprox([xtubo_etrf, ytubo_etrf, ztubo_etrf ],[xtubo_wgs, ytubo_wgs, ztubo_wgs], atol=1e-3 )
 
     # Czepos coordinates
@@ -81,19 +106,4 @@ end
 
     @namedtest "CZEPOS::vector coordinates etrf   >> bessel >> etrf"   isapprox([xvec, yvec, zvec], [xetrf, yetrf, zetrf], atol=1e-3)
     @namedtest "CZEPOS::vector coordinates bessel >> etrf   >> bessel" isapprox([xbes, ybes, zbes], [xbes2, ybes2, zbes2], atol=1e-3)
-end
-
-@testset "Geodetic computations on the sphere" begin
-    b1::Float64 = 49.2058916 # Tubo coordinates
-    l1::Float64 = 16.592834502777777     # Tubo coordinates
-    h1::Float64 = 324.374 # Tubo coordinates
-
-    b2::Float64 = 39.208916 # 
-    l2::Float64 = 10.592646 # 
-    h2::Float64 = 212.32100 # 
-
-    b3  ::Float64 = 44.208916 # 
-    l3  ::Float64 = 15.511246 # 
-    h3  ::Float64 = -112.3210 # 
-
 end

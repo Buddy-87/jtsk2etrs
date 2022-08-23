@@ -249,50 +249,6 @@ function interpolate_geoid(g::Geoid{T}, b::T, l::T, algorithm::AbstractString="n
         end
 
         return result
-    # elseif algorithm === "bilinear"
-    #     # An Alternative Bilinear Interpolation Method Between Spherical Grids
-    #     # https://www.researchgate.net/publication/331602694_An_Alternative_Bilinear_Interpolation_Method_Between_Spherical_Grids
-    #     # f(x,y) = a + b * x + c * y + d * x * y  
-    #     # x::T = deg2rad(b)
-    #     # y::T = deg2rad(l)
-
-    #     # y1::T = deg2rad(bcen - g.db/2.0);
-    #     # y2::T = deg2rad(bcen + g.db/2.0);
-    #     # x1::T = deg2rad(lcen - g.dl/2.0);
-    #     # x2::T = deg2rad(lcen + g.dl/2.0);
-
-    #     x::T = b
-    #     y::T = l
-
-    #     y1::T = bcen - g.db/2.0;
-    #     y2::T = bcen + g.db/2.0;
-    #     x1::T = lcen - g.dl/2.0;
-    #     x2::T = lcen + g.dl/2.0;
-
-    #     f11::T = g.undolation[row, col]
-    #     f12::T = g.undolation[row, col+1]
-    #     f21::T = g.undolation[row+1, col]
-    #     f22::T = g.undolation[row+1, col+1]
-
-    #     c0 = ones(4,1)
-    #     c1 = [x1; x2; x1; x2]
-    #     c2 = [y1; y1; y2; y2]
-    #     c3 = c1 .* c2
-
-    #     f = [f11; f12; f21; f22]
-
-    #     d0::T = det(hcat(c0, c1, c2, c3))
-    #     d1::T = det(hcat(f , c1, c2, c3))
-    #     d2::T = det(hcat(c0, f , c2, c3))
-    #     d3::T = det(hcat(c0, c1, f , c3))
-    #     d4::T = det(hcat(c0, c1, c2, f))
-
-    #     a0::T = d1/d0
-    #     a1::T = d2/d0
-    #     a2::T = d3/d0
-    #     a3::T = d4/d0
-
-    #     return (a0 + a1*x + a2*y + a3*x*y);
     else # algorithm === "nearest"
         #=  Distance-based interpolation =#
         phi_list[1] = bcen - g.db/2.0;
