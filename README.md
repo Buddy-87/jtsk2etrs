@@ -23,7 +23,7 @@ pronoun
 
 To clone project:
 ```
-git clone https://github.com/Buddy-87/jtsk2etrs.jl.git
+git clone https://github.com/Buddy-87/jtsk2etrs.git
 ```
 
 ## Run unit tests
