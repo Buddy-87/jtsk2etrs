@@ -459,9 +459,9 @@ function uvw2xyz(u::Vector{T}, v::Vector{T}, w::Vector{T}, ell::Ellipsoid) where
     uu::Vector{T} = deg2rad.(u)
     vv::Vector{T} = deg2rad.(v)
 
-    x::Vector{T} = ae*sin(uu).*cos(vv).*cosh(w)
-    y::Vector{T} = ae*sin(uu).*sin(vv).*cosh(w)
-    z::Vector{T} = ae*cos(uu).*sinh(w)
+    x::Vector{T} = ae.*sin.(uu).*cos.(vv).*cosh.(w)
+    y::Vector{T} = ae.*sin.(uu).*sin.(vv).*cosh.(w)
+    z::Vector{T} = ae.*cos.(uu).*sinh.(w)
 
     return x,y,z
 
